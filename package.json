@@ -10,8 +10,6 @@
   "scripts": {
     "watch": "tsc --watch",
     "build": "tsc",
-    "prepack": "npm run build",
-    "postinstall": "npm run build",
     "start": "node ./bin"
   },
   "dependencies": {
