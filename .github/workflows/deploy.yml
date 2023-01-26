@@ -20,4 +20,4 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Push to dockerhub
-      run: docker push ${{GITHUB_REPOSITORY}}
+      run: docker push $GITHUB_REPOSITORY
