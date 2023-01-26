@@ -10,8 +10,8 @@ jobs:
   build-image-and-push-to-dockerhub:
     runs-on: ubuntu-latest
     env:
-      DOCKER_USER: ${{DOCKER_USER}}
-      DOCKER_PASSWORD: ${{DOCKER_PASSWORD}}
+      DOCKER_USER: ${{secrets.DOCKER_USER}}
+      DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       DOCKER_REPOSITORY: ${{GITHUB_REPOSITORY}}
     steps:
     - uses: actions/checkout@v3
