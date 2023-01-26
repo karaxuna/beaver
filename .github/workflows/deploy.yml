@@ -9,15 +9,16 @@ on:
 jobs:
   build-image-and-push-to-dockerhub:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_USER: ${{DOCKER_USER}}
+      DOCKER_PASSWORD: ${{DOCKER_PASSWORD}}
+      DOCKER_REPOSITORY: ${{GITHUB_REPOSITORY}}
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag beaver:$(date +%s)
     - name: Log into dockerhub
-      env:
-        DOCKER_USER: ${{DOCKER_USER}}
-        DOCKER_PASSWORD: ${{DOCKER_PASSWORD}}
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Push to dockerhub
-      run: docker push ${{GITHUB_REPOSITORY}}
+      run: docker push $DOCKER_REPOSITORY
