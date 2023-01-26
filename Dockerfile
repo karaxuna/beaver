@@ -25,7 +25,7 @@ COPY entrypoint.sh .
 RUN chmod +x ./entrypoint.sh
 
 # Copy deps
-COPY package*.json tscconfig.json ./
+COPY package*.json tsconfig.json ./
 RUN true
 
 # Install deps
