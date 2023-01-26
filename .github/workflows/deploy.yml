@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag beaver:$(date +%s)
+      run: docker build . --file Dockerfile --tag $GITHUB_REPOSITORY:$(date +%s)
     - name: Log into dockerhub
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
