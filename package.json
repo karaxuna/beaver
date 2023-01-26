@@ -1,0 +1,25 @@
+{
+  "name": "beaver",
+  "version": "0.0.5",
+  "private": false,
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "bin": {
+    "beaver": "bin/index.js"
+  },
+  "scripts": {
+    "watch": "tsc --watch",
+    "build": "tsc",
+    "prepack": "npm run build",
+    "postinstall": "npm run build",
+    "start": "node ./bin"
+  },
+  "dependencies": {
+    "http-proxy": "^1.18.0"
+  },
+  "devDependencies": {
+    "@types/http-proxy": "^1.16.2",
+    "@types/node": "^10.12.18",
+    "typescript": "^3.2.4"
+  }
+}
