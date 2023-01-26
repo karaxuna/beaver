@@ -13,11 +13,11 @@ jobs:
       DOCKER_USER: ${{secrets.DOCKER_USER}}
       DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag $GITHUB_REPOSITORY:latest
-    - name: Log into dockerhub
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: Push to dockerhub
-      run: docker push $GITHUB_REPOSITORY
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag $GITHUB_REPOSITORY:$GITHUB_SHA
+      - name: Log into dockerhub
+        run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - name: Push to dockerhub
+        run: docker push $GITHUB_REPOSITORY:$GITHUB_SHA
