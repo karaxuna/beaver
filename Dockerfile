@@ -27,7 +27,6 @@ RUN chmod +x ./entrypoint.sh
 # Copy deps
 COPY package*.json ./
 RUN true
-COPY ./packages ./packages
 
 # Install deps
 RUN npm i --loglevel notice --unsafe-perm
