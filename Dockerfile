@@ -32,6 +32,7 @@ RUN true
 RUN npm i --loglevel notice --unsafe-perm
 
 # Build
+COPY ./src ./src
 COPY tsconfig.json .
 RUN npm run build
 
