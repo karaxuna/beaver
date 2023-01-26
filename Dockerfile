@@ -25,14 +25,14 @@ COPY entrypoint.sh .
 RUN chmod +x ./entrypoint.sh
 
 # Copy deps
-COPY package*.json
+COPY package*.json ./
 RUN true
 
 # Install deps
 RUN npm i --loglevel notice --unsafe-perm
 
 # Build
-COPY tsconfig.json ./
+COPY tsconfig.json .
 RUN npm run build
 
 # Entrypoint
