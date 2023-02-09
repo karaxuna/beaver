@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const startProxyServer = require('../lib').startProxyServer;
+const { startProxyServer, startDdnsJob } = require('../lib');
 const cwd = process.cwd();
+const tld = process.env.TLD;
+const token = process.env.DIGITALOCEAN_API_TOKEN;
 
-// Read config
-const configFilePath = path.resolve(cwd, './proxy.json');
-const configRaw = JSON.parse(
-    fs.readFileSync(configFilePath, 'utf8').replaceAll('${TLD}', process.env.TLD)
+const configFilePath = path.resolve(
+    cwd, './proxy.json',
 );
 
-startProxyServer(configRaw)
-    .then(() => {
+const configRaw = JSON.parse(
+    fs.readFileSync(configFilePath, 'utf8').replaceAll('${TLD}', tld)
+);
+
+startDdnsJob({
+    token,
+    tld,
+}).then(() => {
+    startProxyServer(configRaw).then(() => {
         console.log('Reverse proxy started on ports 80, 443');
-    })
-    .catch((err) => {
+    }).catch((err) => {
         console.error('Reverse proxy exited with error:', err);
         process.exit(1);
     });
+});

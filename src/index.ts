@@ -3,6 +3,7 @@ import * as https from 'https';
 import * as httpProxy from 'http-proxy';
 import { URL } from 'url';
 import { SNIConfig, createSNICallback, Domain } from './sni';
+import { updateDNSRecord } from './ddns';
 
 interface Config extends SNIConfig {
     domains: Domain[];
@@ -16,7 +17,7 @@ export const startProxyServer = async (config: Config) => {
         autoRewrite: true,
     });
 
-    proxy.on('error', function (err, req, res) {
+    proxy.on('error', function (err, _req, res) {
         if (!res.headersSent) {
             if (typeof res.writeHead === 'function') {
                 res.writeHead(500, {
@@ -94,3 +95,27 @@ export const startProxyServer = async (config: Config) => {
         });
     });
 }
+
+export const startDdnsJob = async ({
+    token,
+    tld,
+    timeout = 30 * 1000,
+}: {
+    token: string;
+    tld: string;
+    timeout?: number;
+}) => {
+    try {
+        const record = await updateDNSRecord(tld, {
+            token,
+        });
+
+        console.log('DNS record updated:', record);
+    } catch (error) {
+        console.error(error);
+    }
+
+    setTimeout(() => {
+        return startDdnsJob({ tld, token });
+    }, timeout);
+};
