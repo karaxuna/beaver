@@ -99,7 +99,7 @@ export const startProxyServer = async (config: Config) => {
 export const startDdnsJob = async ({
     token,
     tld,
-    timeout = 30 * 1000,
+    timeout = 30 * 60 * 1000,
 }: {
     token: string;
     tld: string;
