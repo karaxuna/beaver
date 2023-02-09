@@ -11,7 +11,7 @@ export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRe
     };
 
     const domain = await axios.get(
-      `https://api.digitalocean.com/v2/domains/${domainName}`,
+      `https://api.digitalocean.com/v2/domains/${domainName.split('.').splice(-2).join('.')}`,
       { headers }
     );
 
