@@ -5,22 +5,28 @@ interface UpdateDNSRecordOptions {
 }
 
 export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRecordOptions) => {
+    const rootDomainName = domainName.split('.').splice(-2).join('.');
+
     const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
     };
 
-    const domain = await axios.get(
-      `https://api.digitalocean.com/v2/domains/${domainName.split('.').splice(-2).join('.')}`,
-      { headers }
+    const {
+        data: {
+            domain_records,
+        },
+    } = await axios.get(
+        `https://api.digitalocean.com/v2/domains/${rootDomainName}/records`,
+        { headers }
     );
 
-    const record = domain.data.domain_records.find(
-      record => record.name === domainName && record.type === 'A'
+    const record = domain_records.find(
+        record => record.name === domainName && record.type === 'A'
     );
 
     if (!record) {
-      throw new Error(`No A record found with name ${domainName}`);
+        throw new Error(`No A record found with name ${domainName}`);
     }
 
     const ip = domainName.startsWith('local.') ?
@@ -28,15 +34,15 @@ export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRe
         (await axios.get('https://api.ipify.org?format=json')).data.ip;
 
     const data = {
-      type: 'A',
-      name: domainName,
-      data: ip,
+        type: 'A',
+        name: domainName,
+        data: ip,
     };
 
     await axios.put(
-      `https://api.digitalocean.com/v2/domains/${domainName}/records/${record.id}`,
-      data,
-      { headers },
+        `https://api.digitalocean.com/v2/domains/${rootDomainName}/records/${record.id}`,
+        data,
+        { headers },
     );
 
     return data;
