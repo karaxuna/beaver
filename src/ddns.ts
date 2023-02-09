@@ -43,19 +43,14 @@ export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRe
     });
 
     if (!record) {
-        await axios.put(
-            `https://api.digitalocean.com/v2/domains/${rootDomainName}/records/${record.id}`,
-            data,
-            { headers },
-        );
+        throw new Error(`DNS record not found. Records: ${JSON.stringify(domain_records)}`);
     }
-    else {
-        await axios.post(
-            `https://api.digitalocean.com/v2/domains/${rootDomainName}/records`,
-            data,
-            { headers },
-        );
-    }
+    
+    await axios.post(
+        `https://api.digitalocean.com/v2/domains/${rootDomainName}/records`,
+        data,
+        { headers },
+    );
 
     return data;
 };
