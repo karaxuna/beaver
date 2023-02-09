@@ -46,8 +46,8 @@ export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRe
         throw new Error(`DNS record not found. Records: ${JSON.stringify(domain_records)}`);
     }
     
-    await axios.post(
-        `https://api.digitalocean.com/v2/domains/${rootDomainName}/records`,
+    await axios.put(
+        `https://api.digitalocean.com/v2/domains/${rootDomainName}/records/${record.id}`,
         data,
         { headers },
     );
