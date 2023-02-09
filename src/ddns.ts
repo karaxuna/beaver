@@ -24,15 +24,9 @@ export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRe
         { headers },
     );
 
-    console.log('records:', domain_records);
-
-    const record = domain_records.find((record) => {
-        return record.name === domainName && record.type === 'A';
-    });
-
-    if (!record) {
-        throw new Error(`No A record found with name ${domainName}`);
-    }
+    const recordName = rootDomainName === domainName ?
+        '@' :
+        domainName.substring(0, domainName.indexOf(rootDomainName) - 1);
 
     const ip = domainName.startsWith('local.') ?
         '127.0.0.1' :
@@ -40,15 +34,28 @@ export const updateDNSRecord = async (domainName: string, { token }: UpdateDNSRe
 
     const data = {
         type: 'A',
-        name: domainName,
+        name: recordName,
         data: ip,
     };
 
-    await axios.put(
-        `https://api.digitalocean.com/v2/domains/${rootDomainName}/records/${record.id}`,
-        data,
-        { headers },
-    );
+    const record = domain_records.find((record) => {
+        return record.name === recordName && record.type === 'A';
+    });
+
+    if (!record) {
+        await axios.put(
+            `https://api.digitalocean.com/v2/domains/${rootDomainName}/records/${record.id}`,
+            data,
+            { headers },
+        );
+    }
+    else {
+        await axios.post(
+            `https://api.digitalocean.com/v2/domains/${rootDomainName}/records`,
+            data,
+            { headers },
+        );
+    }
 
     return data;
 };
