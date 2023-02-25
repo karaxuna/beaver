@@ -27,6 +27,7 @@ export const startProxyServer = async (config: Config) => {
         }
 
         res.end(JSON.stringify(err));
+        console.log('Proxy error:', err);
     });
 
     const httpsOptions = {
