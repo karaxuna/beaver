@@ -58,6 +58,8 @@ export const startProxyServer = async (config: Config) => {
                 });
             }
         }).on('upgrade', function (req, socket, head) {
+            console.log('Https update event from:', req.url);
+
             const url = new URL(
                 req.url,
                 `http://${req.headers.host}`,
@@ -76,7 +78,8 @@ export const startProxyServer = async (config: Config) => {
             }
 
             proxy.ws(req, socket, head, {
-                target: `ws://${domain.target}`
+                target: `ws://${domain.target}`,
+                secure: false,
             });
         }).on('error', function (err) {
             reject(err);
