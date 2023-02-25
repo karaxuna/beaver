@@ -67,11 +67,11 @@ export const startProxyServer = async (config: Config) => {
             });
 
             if (!domain) {
-                throw new Error(`Domain not found: ${req.headers.host}`);
+                return console.error(`Domain not found: ${req.headers.host}`);
             }
 
             if ('redirectTo' in domain) {
-                throw new Error(`Cannot upgrade socket, because domain is redirected to "${domain.redirectTo}"`);
+                return console.error(`Cannot upgrade socket, because domain is redirected to "${domain.redirectTo}"`);
             }
 
             proxy.ws(req, socket, head, {
