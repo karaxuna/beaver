@@ -128,6 +128,7 @@ export const startDdnsJob = async ({
 };
 
 export const updateCerts = async () => {
+  return
   const ls = spawn(
     'bash',
     [`"${path.resolve(__dirname, '../acme.sh/acme.sh')}"`, '--issue', '-d', `"${process.env.TLD}"`, '-d', `"*.${process.env.TLD}"`, '--dns', 'dns_dgon', '--log'],
