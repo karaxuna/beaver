@@ -21,9 +21,6 @@ RUN git clone https://github.com/Neilpang/acme.sh.git && \
     ./acme.sh --install  \
     --cert-home /acme.sh
 
-# Make it runnable
-RUN chmod +x ./acme.sh/acme.sh
-
 # Copy deps
 COPY package*.json ./
 RUN true
