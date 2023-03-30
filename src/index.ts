@@ -133,6 +133,7 @@ export const updateCerts = async () => {
     [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', 'dns_dgon', '--log'],
     {
       env: {
+        ...process.env,
         DO_API_KEY: process.env.DIGITALOCEAN_API_TOKEN,
       },
     },
