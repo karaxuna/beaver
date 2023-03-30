@@ -151,6 +151,7 @@ export const updateCerts = async () => {
 
   return new Promise<void>((resolve, reject) => {
     ls.once('close', (code) => {
+      console.log('code:', code);
       if (code === 0) {
         resolve();
       }
