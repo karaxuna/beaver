@@ -21,9 +21,6 @@ RUN git clone https://github.com/Neilpang/acme.sh.git && \
     ./acme.sh --install  \
     --cert-home /acme.sh
 
-COPY entrypoint.sh .
-RUN chmod +x ./entrypoint.sh
-
 # Copy deps
 COPY package*.json ./
 RUN true
@@ -39,8 +36,5 @@ RUN npm run build
 # Copy bin
 COPY ./bin ./bin
 
-# Entrypoint
-ENTRYPOINT [ "./entrypoint.sh" ]
-
 # CMD
-CMD []
+CMD [ "npm", "start" ]
