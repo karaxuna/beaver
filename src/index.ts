@@ -138,10 +138,12 @@ export const updateCerts = async () => {
     },
   );
 
+  ls.stdout.setEncoding('utf8');
   ls.stdout.on('data', (data) => {
     console.log(data);
   });
 
+  ls.stderr.setEncoding('utf8');
   ls.stderr.on('data', (data) => {
     console.error(data);
   });
