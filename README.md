@@ -1,3 +1,3 @@
 ## Beaver
 
-Simple Reverse proxy. Beaver build dams to control the flow of water.
+Simple Reverse proxy. Beaver builds dams to control the flow of water.
