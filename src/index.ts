@@ -2,7 +2,8 @@ import * as http from 'http';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
 import { spawn } from 'child_process';
-import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { URL } from 'url';
 import { SNIConfig, createSNICallback, Domain } from './sni';
 import { updateDNSRecord } from './ddns';
@@ -129,7 +130,7 @@ export const startDdnsJob = async ({
 export const updateCerts = async () => {
   const ls = spawn(
     'bash',
-    [`"${fs.promises.realpath('~/.acme.sh/acme.sh')}" --issue -d "${process.env.TLD}" -d "*.${process.env.TLD}" --dns dns_dgon --log`],
+    [`"${path.resolve(os.homedir(), './.acme.sh/acme.sh')}" --issue -d "${process.env.TLD}" -d "*.${process.env.TLD}" --dns dns_dgon --log`],
     {
       env: {
         DO_API_KEY: process.env.DIGITALOCEAN_API_TOKEN,
