@@ -135,7 +135,6 @@ export const updateCerts = async () => {
       env: {
         ...process.env,
         DO_API_KEY: process.env.DIGITALOCEAN_API_TOKEN,
-        ACCOUNT_THUMBPRINT: process.env.ACCOUNT_THUMBPRINT,
       },
     },
   );
