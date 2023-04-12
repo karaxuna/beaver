@@ -1,7 +1,7 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
-import { spawn } from 'child_process';
+import { spawn as rawSpawn } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
 import { URL } from 'url';
@@ -127,16 +127,11 @@ export const startDdnsJob = async ({
   }, timeout);
 };
 
-export const updateCerts = async () => {
-  const ls = spawn(
+export const spawn = (args, options) => {
+  const ls = rawSpawn(
     'bash',
-    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', 'dns_dgon', '--log', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
-    {
-      env: {
-        ...process.env,
-        DO_API_KEY: process.env.DIGITALOCEAN_API_TOKEN,
-      },
-    },
+    args,
+    options,
   );
 
   ls.stdout.setEncoding('utf8');
@@ -159,4 +154,21 @@ export const updateCerts = async () => {
       }
     });
   });
+};
+
+export const updateCerts = async () => {
+  await spawn(
+    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--register-account', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
+    process.env,
+  );
+
+  await spawn(
+    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', 'dns_dgon', '--log'],
+    {
+      env: {
+        ...process.env,
+        DO_API_KEY: process.env.DIGITALOCEAN_API_TOKEN,
+      },
+    },
+  );
 };
