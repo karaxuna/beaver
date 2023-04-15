@@ -157,10 +157,12 @@ export const spawn = (args, options) => {
 };
 
 export const updateCerts = async () => {
-  await spawn(
-    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--register-account', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
-    process.env,
-  );
+  if (process.env.CA_EAB_KEY_ID && process.env.CA_EAB_HMAC_KEY) {
+    await spawn(
+      [path.resolve(__dirname, '../acme.sh/acme.sh'), '--register-account', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
+      process.env,
+    );
+  }
 
   await spawn(
     [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', 'dns_dgon', '--log'],
