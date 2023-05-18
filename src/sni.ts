@@ -29,7 +29,7 @@ const getSecureContext = async (retry = 30) => {
         cert,
     ] = await Promise.all([
         `/acme.sh/${process.env.TLD}/${process.env.TLD}.key`,
-        `/acme.sh/${process.env.TLD}/${process.env.TLD}.cer`,
+        `/acme.sh/${process.env.TLD}/fullchain.cer`,
     ].map((filePath) => {
         return fs.readFile(filePath, 'utf8');
     }));
