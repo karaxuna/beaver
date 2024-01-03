@@ -3,22 +3,17 @@ const fs = require('fs');
 const path = require('path');
 const { startProxyServer, startDdnsJob, updateCerts } = require('../lib');
 const cwd = process.cwd();
-const tld = process.env.TLD;
-const token = process.env.DIGITALOCEAN_API_TOKEN;
 
 const configFilePath = path.resolve(
   cwd, './proxy.json',
 );
 
 const configRaw = JSON.parse(
-  fs.readFileSync(configFilePath, 'utf8').replaceAll('${TLD}', tld)
+  fs.readFileSync(configFilePath, 'utf8').replaceAll('${TLD}', process.env.TLD),
 );
 
 updateCerts().then(() => {
-  startDdnsJob({
-    token,
-    tld,
-  }).then(() => {
+  startDdnsJob().then(() => {
     startProxyServer(configRaw).then(() => {
       console.log('Reverse proxy started on ports 80, 443');
     }).catch((err) => {

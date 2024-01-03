@@ -3,10 +3,9 @@ import * as https from 'https';
 import * as httpProxy from 'http-proxy';
 import { spawn as rawSpawn } from 'child_process';
 import * as path from 'path';
-import * as os from 'os';
 import { URL } from 'url';
 import { SNIConfig, createSNICallback, Domain } from './sni';
-import { updateDNSRecord } from './ddns';
+import { updateDigitalOceanDNSRecord } from './ddns';
 
 interface Config extends SNIConfig {
   domains: Domain[];
@@ -103,18 +102,39 @@ export const startProxyServer = async (config: Config) => {
   });
 }
 
+const getDNS = () => {
+  if (process.env.DO_API_KEY) {
+    return 'dns_dgon';
+  }
+  
+  if (process.env.GD_Key && process.env.GD_Secret) {
+    return 'dns_gd';
+  }
+  
+  if (process.env.CF_Token && process.env.CF_Account_ID && process.env.CF_Zone_ID) {
+    return 'dns_cf';
+  }
+
+  throw new Error('Unknown dns');
+};
+
 export const startDdnsJob = async ({
-  token,
-  tld,
   timeout = 30 * 60 * 1000,
 }: {
-  token: string;
-  tld: string;
   timeout?: number;
-}) => {
+} = {}) => {
+  const dns = getDNS();
+
+  // TODO: Currently ddns works only with DigitalOcean,
+  // implement other providers.
+  if (dns !== 'dns_dgon') {
+    console.warn(`Skipping ddns for ${dns}, it only works with DigitalOcean`);
+    return;
+  }
+
   try {
-    const record = await updateDNSRecord(tld, {
-      token,
+    const record = await updateDigitalOceanDNSRecord(process.env.TLD, {
+      token: process.env.DO_API_KEY,
     });
 
     console.log('DNS record updated:', record);
@@ -123,7 +143,7 @@ export const startDdnsJob = async ({
   }
 
   setTimeout(() => {
-    return startDdnsJob({ tld, token });
+    return startDdnsJob();
   }, timeout);
 };
 
@@ -165,12 +185,9 @@ export const updateCerts = async () => {
   }
 
   await spawn(
-    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', 'dns_dgon', '--log'],
+    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', getDNS(), '--log'],
     {
-      env: {
-        ...process.env,
-        DO_API_KEY: process.env.DIGITALOCEAN_API_TOKEN,
-      },
+      env: process.env,
     },
   );
 };
