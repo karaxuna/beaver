@@ -1,27 +1,19 @@
 {
-    "compilerOptions": {
-        "baseUrl": ".",
-        "outDir": "./lib",
-        "rootDir": "./src",
-        "target": "es5",
-        "module": "commonjs",
-        "skipLibCheck": true,
-        "sourceMap": true,
-        "declaration": true,
-        "moduleResolution": "node",
-        "typeRoots": [
-            "./@types",
-            "./node_modules/@types"
-        ],
-        "lib": [
-            "es2015"
-        ]
-    },
-    "include": [
-        "./src/**/*.ts"
-    ],
-    "exclude": [
-        "./node_modules",
-        "./lib"
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "target": "ES2015",
+    "module": "commonjs",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "lib": [
+      "es2015"
     ]
+  },
+  "files": [
+    "./src/index.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
