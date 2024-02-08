@@ -17,25 +17,6 @@ export const send = (client: WebSocket, data: unknown) => {
   client.send(JSON.stringify(data));
 };
 
-export const fail = (
-  client: WebSocket,
-  error: Error,
-  input?: MessageContext,
-) => {
-  return send(client, {
-    id: uuid().toString(),
-    event: 'fail',
-    payload: {
-      input,
-      result: {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      },
-    },
-  });
-};
-
 const terminate = (
   client: WebSocket,
   error: Error,
@@ -99,7 +80,7 @@ export const createWebSocketConnectionOpenHandler = (
     try {
       await updateCerts(connection);
     } catch (error) {
-      return terminate(connection.client, new Error(`updateCerts failed: ${error.message}`));
+      return terminate(connection.client, new Error(`updateCerts failed: ${error?.message}`));
     }
 
     ws.connections.push(connection);
