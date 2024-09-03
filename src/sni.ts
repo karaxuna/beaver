@@ -1,56 +1,68 @@
 import * as tls from 'tls';
-import { promises as fs } from 'fs';
-import { Domain } from './types';
-import { ConnectionContext } from './websocket-server';
+import { promises as fs, /*watch,*/ constants as fsConstants } from 'fs';
 
-const getSecureContext = async (tld: string) => {
-  const [
-    key,
-    cert,
-  ] = await Promise.all([
-    `/acme.sh/${tld}/${tld}.key`,
-    `/acme.sh/${tld}/fullchain.cer`,
-  ].map((filePath) => {
-    return fs.readFile(filePath, 'utf8');
-  }));
+export type Domain = {
+    name: string;
+} & ({
+    redirectTo: string;
+} | {
+    target: string;
+});
 
-  return tls.createSecureContext({
-    key,
-    cert,
-  });
+interface GreenlockConfig {
+    packageRoot: string;
+    configDir: string;
+    packageAgent: string;
+    maintainerEmail: string;
+    directoryUrl: string;
+}
+
+export interface SNIConfig extends GreenlockConfig {
+    domains: Domain[];
+    godaddyKey: string;
+    godaddySecret: string;
+}
+
+const getSecureContext = async (retry = 30) => {
+    const [
+        key,
+        cert,
+    ] = await Promise.all([
+        `/acme.sh/${process.env.TLD}/${process.env.TLD}.key`,
+        `/acme.sh/${process.env.TLD}/fullchain.cer`,
+    ].map((filePath) => {
+        return fs.readFile(filePath, 'utf8');
+    }));
+
+    return tls.createSecureContext({
+        key,
+        cert,
+    });
 };
 
-export const createSNICallback = (connections: ConnectionContext[]): tls.TLSSocketOptions['SNICallback'] => {
-  const cache = {};
+export const createSNICallback = async (config: SNIConfig) => {
+    const cache = {};
 
-  return (servername: string, cb) => {
-    const connection = connections.find((connection) => {
-      return connection.config.domains.some((domain) => {
-        return domain.name === servername;
-      });
-    });
+    // watch(`/acme.sh/${process.env.TLD}/`, () => {
+    //     cache = {};
+    // });
 
-    if (!connection) {
-      const error = new Error(`Could not find client for ${servername}`);
-      console.error(error);
-      return cb(error);
-    }
+    return (servername: string, cb) => {
+        if (!cache[process.env.TLD]) {
+            console.log('Getting secure context for:', servername);
+            cache[process.env.TLD] = getSecureContext();
+            console.log('Cache updated:', cache);
+        }
 
-    if (!cache[connection.tld]) {
-      console.log('Getting secure context for:', servername);
-      cache[connection.tld] = getSecureContext(connection.tld);
-      console.log('Cache updated:', cache);
-    }
-
-    cache[connection.tld]
-      .then((context: tls.SecureContext) => {
-        cb(null, context);
-      })
-      .catch((err: Error) => {
-        console.warn('Error getting secure context:', err);
-        Reflect.deleteProperty(cache, connection.tld);
-        console.log('Cache updated:', cache);
-        cb(err);
-      });
-  };
+        cache[process.env.TLD]
+            .then((context) => {
+                cb(null, context);
+            })
+            .catch((err) => {
+                console.warn('Error getting secure context:', err);
+                Reflect.deleteProperty(cache, process.env.TLD);
+                console.log('Cache updated:', cache);
+                cb(err);
+            });
+    };
 };
