@@ -1,29 +1,7 @@
 import * as tls from 'tls';
-import { promises as fs, /*watch,*/ constants as fsConstants } from 'fs';
+import { promises as fs } from 'fs';
 
-export type Domain = {
-    name: string;
-} & ({
-    redirectTo: string;
-} | {
-    target: string;
-});
-
-interface GreenlockConfig {
-    packageRoot: string;
-    configDir: string;
-    packageAgent: string;
-    maintainerEmail: string;
-    directoryUrl: string;
-}
-
-export interface SNIConfig extends GreenlockConfig {
-    domains: Domain[];
-    godaddyKey: string;
-    godaddySecret: string;
-}
-
-const getSecureContext = async (retry = 30) => {
+const getSecureContext = async () => {
     const [
         key,
         cert,
@@ -40,12 +18,8 @@ const getSecureContext = async (retry = 30) => {
     });
 };
 
-export const createSNICallback = async (config: SNIConfig) => {
+export const createSNICallback = async () => {
     const cache = {};
-
-    // watch(`/acme.sh/${process.env.TLD}/`, () => {
-    //     cache = {};
-    // });
 
     return (servername: string, cb) => {
         if (!cache[process.env.TLD]) {
