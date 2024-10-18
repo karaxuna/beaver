@@ -20,8 +20,8 @@ export const startProxyServer = async (config: Config) => {
   });
 
   proxy.on('error', function (err, _req, res) {
-    if (!res.headersSent) {
-      if (typeof res.writeHead === 'function') {
+    if (!('headersSent' in res) || !res.headersSent) {
+      if ('writeHead' in res) {
         res.writeHead(500, {
           'content-type': 'application/json'
         });
@@ -33,7 +33,7 @@ export const startProxyServer = async (config: Config) => {
   });
 
   const httpsOptions = {
-    SNICallback: await createSNICallback(config)
+    SNICallback: await createSNICallback(config),
   };
 
   await new Promise<void>((resolve, reject) => {
@@ -82,6 +82,8 @@ export const startProxyServer = async (config: Config) => {
       proxy.ws(req, socket, head, {
         target: `ws://${domain.target}`,
         secure: false,
+      }, (error) => {
+        console.error('Socket upgrade proxy error:', error);
       });
     }).on('error', function (err) {
       reject(err);

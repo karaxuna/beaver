@@ -1,5 +1,5 @@
-const axios = require('axios');
-const psl = require('psl');
+import * as psl from 'psl';
+import axios from 'axios';
 
 interface UpdateDigitalOceanDNSRecordOptions {
   token: string;
@@ -7,6 +7,10 @@ interface UpdateDigitalOceanDNSRecordOptions {
 
 export const updateDigitalOceanDNSRecord = async (domainName: string, { token }: UpdateDigitalOceanDNSRecordOptions) => {
   const parsed = psl.parse(domainName);
+
+  if (parsed.error) {
+    throw parsed.error;
+  }
 
   const headers = {
     'Content-Type': 'application/json',
@@ -18,11 +22,11 @@ export const updateDigitalOceanDNSRecord = async (domainName: string, { token }:
       domain_records,
     },
   } = await axios.get(
-    `https://api.digitalocean.com/v2/domains/${parsed.domain}/records`,
+    `https://api.digitalocean.com/v2/domains/${(parsed as psl.ParsedDomain).domain}/records`,
     { headers },
   );
 
-  const recordName = parsed.subdomain || '@';
+  const recordName = (parsed as psl.ParsedDomain).subdomain || '@';
 
   const ip = domainName.startsWith('local.') ?
     '127.0.0.1' :
@@ -43,7 +47,7 @@ export const updateDigitalOceanDNSRecord = async (domainName: string, { token }:
   }
 
   await axios.put(
-    `https://api.digitalocean.com/v2/domains/${parsed.domain}/records/${record.id}`,
+    `https://api.digitalocean.com/v2/domains/${(parsed as psl.ParsedDomain).domain}/records/${record.id}`,
     data,
     { headers },
   );
