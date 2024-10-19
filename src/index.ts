@@ -1,6 +1,7 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
+import type { Socket } from 'net';
 import { spawn as rawSpawn } from 'child_process';
 import * as path from 'path';
 import { URL } from 'url';
@@ -20,13 +21,14 @@ type Config = {
 };
 
 export const startProxyServer = async (config: Config) => {
+  const sockets = [];
   const proxy = httpProxy.createProxyServer({
     ws: true,
     changeOrigin: false,
     secure: false,
     autoRewrite: true,
     proxyTimeout: 10000,
-    timeout: 5000,
+    timeout: 10000,
   });
 
   proxy.on('error', function (error, _req, res) {
@@ -40,6 +42,7 @@ export const startProxyServer = async (config: Config) => {
 
     res.end(JSON.stringify(error));
     console.log('Proxy error:', error);
+    res.destroy();
   });
 
   const httpsOptions = {
@@ -69,8 +72,26 @@ export const startProxyServer = async (config: Config) => {
           xfwd: true,
         });
       }
-    }).on('upgrade', async (req: http.IncomingMessage, socket, head) => {
+    }).on('connection', (socket) => {
+      sockets.push(socket);
+      console.log('New connection. Active sockets:', sockets.length);
+
+      socket.on('close', () => {
+        sockets.splice(sockets.indexOf(socket), 1);
+        console.log('Connection closed. Active sockets:', sockets.length);
+      });
+    }).on('upgrade', async (req: http.IncomingMessage, socket: Socket, head) => {
       console.log('Http upgrade event from:', req.url);
+
+      const destroy = (str: string = 'HTTP/1.1 400 Bad Request\r\n\r\n') => (error: Error) => {
+        if (error) console.error(error);
+        socket.write(str);
+        socket.destroy();
+      };
+
+      socket.setTimeout(10000);
+      socket.on('timeout', destroy('HTTP/1.1 408 Request Timeout\r\n\r\n'));
+      socket.on('error', destroy());
 
       try {
         if (req.headers['upgrade'] !== 'websocket') {
@@ -98,24 +119,12 @@ export const startProxyServer = async (config: Config) => {
           throw new Error(`Cannot upgrade socket, because domain is redirected to "${domain.redirectTo}"`);
         }
 
-        await new Promise<void>((_resolve, _reject) => {
-          proxy.ws(req, socket, head, {
-            target: `ws://${domain.target}`,
-            secure: false,
-          }, (error) => {
-            if (error) {
-              error.message = 'Socket upgrade proxy error: ' + error.message;
-              _reject(error);
-            }
-            else {
-              _resolve();
-            }
-          });
-        });
+        proxy.ws(req, socket, head, {
+          target: `ws://${domain.target}`,
+          secure: false,
+        }, destroy());
       } catch (error) {
-        console.error('Http upgrade error:', error);
-        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
-        socket.destroy();
+        destroy()(error);
       }
     }).on('error', function (error) {
       reject(error);
