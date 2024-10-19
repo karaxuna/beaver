@@ -4,12 +4,20 @@ import * as httpProxy from 'http-proxy';
 import { spawn as rawSpawn } from 'child_process';
 import * as path from 'path';
 import { URL } from 'url';
-import { SNIConfig, createSNICallback, Domain } from './sni';
+import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
 
-interface Config extends SNIConfig {
+type Domain = {
+  name: string;
+} & ({
+  target: string;
+} | {
+  redirectTo: string;
+});
+
+type Config = {
   domains: Domain[];
-}
+};
 
 export const startProxyServer = async (config: Config) => {
   const proxy = httpProxy.createProxyServer({
@@ -17,9 +25,11 @@ export const startProxyServer = async (config: Config) => {
     changeOrigin: false,
     secure: false,
     autoRewrite: true,
+    proxyTimeout: 10000,
+    timeout: 5000,
   });
 
-  proxy.on('error', function (err, _req, res) {
+  proxy.on('error', function (error, _req, res) {
     if (!('headersSent' in res) || !res.headersSent) {
       if ('writeHead' in res) {
         res.writeHead(500, {
@@ -28,12 +38,12 @@ export const startProxyServer = async (config: Config) => {
       }
     }
 
-    res.end(JSON.stringify(err));
-    console.log('Proxy error:', err);
+    res.end(JSON.stringify(error));
+    console.log('Proxy error:', error);
   });
 
   const httpsOptions = {
-    SNICallback: await createSNICallback(config),
+    SNICallback: await createSNICallback(),
   };
 
   await new Promise<void>((resolve, reject) => {
@@ -59,34 +69,56 @@ export const startProxyServer = async (config: Config) => {
           xfwd: true,
         });
       }
-    }).on('upgrade', function (req, socket, head) {
-      console.log('Https update event from:', req.url);
+    }).on('upgrade', async (req: http.IncomingMessage, socket, head) => {
+      console.log('Http upgrade event from:', req.url);
 
-      const url = new URL(
-        req.url,
-        `http://${req.headers.host}`,
-      );
+      try {
+        if (req.headers['upgrade'] !== 'websocket') {
+          throw new Error('Not a websocket upgrade request');
+        }
 
-      const domain = config.domains.find((domain_) => {
-        return (url.hostname + url.pathname).startsWith(domain_.name);
-      });
+        if (!req.headers?.host) {
+          throw new Error('Host header not found');
+        }
 
-      if (!domain) {
-        return console.error(`Domain not found: ${req.headers.host}`);
+        const url = new URL(
+          req.url,
+          `http://${req.headers.host}`,
+        );
+
+        const domain = config.domains.find((domain_) => {
+          return (url.hostname + url.pathname).startsWith(domain_.name);
+        });
+
+        if (!domain) {
+          throw new Error(`Domain not found: ${req.headers.host}`);
+        }
+
+        if ('redirectTo' in domain) {
+          throw new Error(`Cannot upgrade socket, because domain is redirected to "${domain.redirectTo}"`);
+        }
+
+        await new Promise<void>((_resolve, _reject) => {
+          proxy.ws(req, socket, head, {
+            target: `ws://${domain.target}`,
+            secure: false,
+          }, (error) => {
+            if (error) {
+              error.message = 'Socket upgrade proxy error: ' + error.message;
+              _reject(error);
+            }
+            else {
+              _resolve();
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Http upgrade error:', error);
+        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+        socket.destroy();
       }
-
-      if ('redirectTo' in domain) {
-        return console.error(`Cannot upgrade socket, because domain is redirected to "${domain.redirectTo}"`);
-      }
-
-      proxy.ws(req, socket, head, {
-        target: `ws://${domain.target}`,
-        secure: false,
-      }, (error) => {
-        console.error('Socket upgrade proxy error:', error);
-      });
-    }).on('error', function (err) {
-      reject(err);
+    }).on('error', function (error) {
+      reject(error);
     }).listen(443, '0.0.0.0', function () {
       resolve();
     });
