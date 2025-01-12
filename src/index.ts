@@ -2,11 +2,13 @@ import * as http from 'http';
 import * as https from 'https';
 import * as httpProxy from 'http-proxy';
 import type { Socket } from 'net';
-import { spawn as rawSpawn } from 'child_process';
+import { spawn as rawSpawn, SpawnOptions } from 'child_process';
 import * as path from 'path';
 import { URL } from 'url';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
+
+const REQUEST_TIMEOUT = 10000;
 
 type Domain = {
   name: string;
@@ -50,10 +52,10 @@ export const startProxyServer = async (config: Config) => {
   };
 
   await new Promise<void>((resolve, reject) => {
-    https.createServer(httpsOptions, function (req, res) {
+    https.createServer(httpsOptions, function (client_req, client_res) {
       const url = new URL(
-        req.url,
-        `https://${req.headers.host}`,
+        client_req.url,
+        `https://${client_req.headers.host}`,
       );
 
       const domain = config.domains.find((domain_) => {
@@ -61,15 +63,48 @@ export const startProxyServer = async (config: Config) => {
       });
 
       if (!domain) {
-        res.statusCode = 404;
-        res.end('Domain not found');
+        client_res.statusCode = 404;
+        client_res.end('Domain not found');
       } else if ('redirectTo' in domain) {
-        res.writeHead(301, { 'Location': 'https://' + domain.redirectTo });
-        res.end();
+        client_res.writeHead(301, { 'Location': 'https://' + domain.redirectTo });
+        client_res.end();
       } else {
-        proxy.web(req, res, {
-          target: `http://${domain.target}`,
-          xfwd: true,
+        const options: http.RequestOptions = {
+          hostname: `http://${domain.target}`,
+          port: 80,
+          path: client_req.url,
+          method: client_req.method,
+          headers: {
+            ...client_req.headers,
+            'X-Forwarded-For': client_req.socket.remoteAddress,
+            'X-Forwarded-Host': client_req.headers.host,
+            'X-Forwarded-Proto': 'https',
+          },
+        };
+
+        const proxy_req = http.request(options, (proxy_res) => {
+          client_res.writeHead(proxy_res.statusCode, proxy_res.headers);
+
+          proxy_res.pipe(client_res, {
+            end: true,
+          });
+        });
+
+        client_req.pipe(proxy_req, {
+          end: true,
+        });
+
+        proxy_req.on('error', (error) => {
+          console.error('Proxy request error:', error);
+
+          if (!client_res.headersSent) {
+            client_res.writeHead(502);
+            client_res.end('Bad Gateway');
+          }
+        });
+
+        proxy_req.setTimeout(REQUEST_TIMEOUT, () => {
+          proxy_req.destroy(new Error('Request timed out'));
         });
       }
     }).on('connection', (socket) => {
@@ -190,7 +225,7 @@ export const startDdnsJob = async ({
   }, timeout);
 };
 
-export const spawn = (args, options) => {
+export const spawn = (args: ReadonlyArray<string>, options: SpawnOptions) => {
   const ls = rawSpawn(
     'bash',
     args,
@@ -223,7 +258,9 @@ export const updateCerts = async () => {
   if (process.env.CA_EAB_KEY_ID && process.env.CA_EAB_HMAC_KEY) {
     await spawn(
       [path.resolve(__dirname, '../acme.sh/acme.sh'), '--register-account', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
-      process.env,
+      {
+        env: process.env,
+      },
     );
   }
 
