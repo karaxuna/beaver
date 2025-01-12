@@ -70,9 +70,10 @@ export const startProxyServer = async (config: Config) => {
         client_res.writeHead(301, { 'Location': 'https://' + domain.redirectTo });
         client_res.end();
       } else {
+        const [hostname, port] = domain.target.split(':');
         const options: http.RequestOptions = {
-          hostname: domain.target,
-          port: 80,
+          hostname,
+          port: port ? parseInt(port) : 80,
           path: client_req.url,
           method: client_req.method,
           headers: {
