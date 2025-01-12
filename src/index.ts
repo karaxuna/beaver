@@ -9,6 +9,7 @@ import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
 
 const REQUEST_TIMEOUT = 10000;
+const MAX_CONNECTIONS = 30;
 
 type Domain = {
   name: string;
@@ -23,7 +24,7 @@ type Config = {
 };
 
 export const startProxyServer = async (config: Config) => {
-  const sockets = [];
+  const connections: Array<{ createdAt: number; socket: Socket }> = [];
   const proxy = httpProxy.createProxyServer({
     ws: true,
     changeOrigin: false,
@@ -108,12 +109,19 @@ export const startProxyServer = async (config: Config) => {
         });
       }
     }).on('connection', (socket) => {
-      sockets.push(socket);
-      console.log('New connection. Active sockets:', sockets.length);
+      const connection = {
+        createdAt: Date.now(),
+        socket,
+      };
+
+      connections.push(connection);
+
+      if (connections.length > MAX_CONNECTIONS) {
+        console.warn('New connection. Active connections:', connections.length, '. Oldest active for:', (Date.now() - connections[0].createdAt) / 1000, ' secs');
+      }
 
       socket.on('close', () => {
-        sockets.splice(sockets.indexOf(socket), 1);
-        console.log('Connection closed. Active sockets:', sockets.length);
+        connections.splice(connections.indexOf(socket), 1);
       });
     }).on('upgrade', async (req: http.IncomingMessage, socket: Socket, head) => {
       console.log('Http upgrade event from:', req.url);
