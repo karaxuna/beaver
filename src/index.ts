@@ -70,7 +70,7 @@ export const startProxyServer = async (config: Config) => {
         client_res.end();
       } else {
         const options: http.RequestOptions = {
-          hostname: `http://${domain.target}`,
+          hostname: domain.target,
           port: 80,
           path: client_req.url,
           method: client_req.method,
