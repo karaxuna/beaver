@@ -12,7 +12,7 @@ const configRaw = JSON.parse(
   fs.readFileSync(configFilePath, 'utf8').replaceAll('${TLD}', process.env.TLD),
 );
 
-updateCerts().then(() => {
+updateCerts(configRaw).then(() => {
   startDdnsJob().then(() => {
     startProxyServer(configRaw).then(() => {
       console.log('Reverse proxy started on ports 80, 443');
