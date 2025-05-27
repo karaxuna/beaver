@@ -5,6 +5,7 @@ import type { Socket } from 'net';
 import { spawn as rawSpawn, SpawnOptions } from 'child_process';
 import * as path from 'path';
 import { URL } from 'url';
+import wildcard from 'wildcard';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
 
@@ -60,7 +61,7 @@ export const startProxyServer = async (config: Config) => {
       );
 
       const domain = config.domains.find((domain_) => {
-        return (url.hostname + url.pathname).startsWith(domain_.name);
+        return wildcard(domain_.name, url.hostname);
       });
 
       if (!domain) {
