@@ -36,21 +36,19 @@ export const createSNICallback = async (config: any) => {
             return cb(new Error('No domain found for servername: ' + servername));
         }
 
-        const cert = domain.name.replace('*.', '');
-
-        if (!cache[cert]) {
-            console.log('Getting secure context for:', servername, 'cert:', cert);
-            cache[cert] = getSecureContext(cert);
+        if (!cache[domain.name]) {
+            console.log('Getting secure context for:', servername, 'domain name:', domain.name);
+            cache[domain.name] = getSecureContext(domain.name);
             console.log('Cache updated:', cache);
         }
 
-        cache[cert]
+        cache[domain.name]
             .then((context) => {
                 cb(null, context);
             })
             .catch((err) => {
                 console.warn('Error getting secure context:', err);
-                Reflect.deleteProperty(cache, cert);
+                Reflect.deleteProperty(cache, domain.name);
                 console.log('Cache updated:', cache);
                 cb(err);
             });

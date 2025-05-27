@@ -276,9 +276,9 @@ export const updateCerts = async (config: Config) => {
     );
   }
 
-  for (const domain of config.domains) {
+  await Promise.all(config.domains.map(async (domain) => {
     await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), '-d', domain.name, '--issue', '--dns', getDNS(), '--log'], {
       env: process.env,
     });
-  }
+  }));
 };
