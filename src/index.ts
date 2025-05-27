@@ -5,7 +5,7 @@ import type { Socket } from 'net';
 import { spawn as rawSpawn, SpawnOptions } from 'child_process';
 import * as path from 'path';
 import { URL } from 'url';
-import wildcard from 'wildcard';
+import * as wildcard from 'wildcard';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
 
