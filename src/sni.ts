@@ -1,13 +1,14 @@
 import * as tls from 'tls';
 import { promises as fs } from 'fs';
+import wildcard from 'wildcard';
 
-const getSecureContext = async (servername: string) => {
+const getSecureContext = async (tld: string) => {
     const [
         key,
         cert,
     ] = await Promise.all([
-        `/acme.sh/${servername}/${servername}.key`,
-        `/acme.sh/${servername}/fullchain.cer`,
+        `/acme.sh/${tld}/${tld}.key`,
+        `/acme.sh/${tld}/fullchain.cer`,
     ].map((filePath) => {
         return fs.readFile(filePath, 'utf8');
     }));
@@ -18,17 +19,27 @@ const getSecureContext = async (servername: string) => {
     });
 };
 
-export const createSNICallback = async () => {
+export const createSNICallback = async (config: any) => {
     const cache = {};
 
     return (servername: string, cb) => {
-        if (!cache[servername]) {
-            console.log('Getting secure context for:', servername);
-            cache[servername] = getSecureContext(servername);
+        const domain = config.domains.find((domain: any) => {
+            return wildcard(domain.name, servername);
+        });
+
+        if (!domain) {
+            return cb(new Error('No domain found for servername: ' + servername));
+        }
+
+        const cert = domain.name.replace('*.', '');
+
+        if (!cache[cert]) {
+            console.log('Getting secure context for:', servername, 'cert:', cert);
+            cache[cert] = getSecureContext(cert);
             console.log('Cache updated:', cache);
         }
 
-        cache[servername]
+        cache[cert]
             .then((context) => {
                 cb(null, context);
             })

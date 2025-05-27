@@ -50,7 +50,7 @@ export const startProxyServer = async (config: Config) => {
   });
 
   const httpsOptions = {
-    SNICallback: await createSNICallback(),
+    SNICallback: await createSNICallback(config),
   };
 
   await new Promise<void>((resolve, reject) => {
