@@ -3,20 +3,25 @@ import { promises as fs } from 'fs';
 import * as wildcard from 'wildcard';
 
 const getSecureContext = async (tld: string) => {
-    const [
-        key,
-        cert,
-    ] = await Promise.all([
-        `/acme.sh/${tld}/${tld}.key`,
-        `/acme.sh/${tld}/fullchain.cer`,
-    ].map((filePath) => {
-        return fs.readFile(filePath, 'utf8');
-    }));
+    try {
+        const [
+            key,
+            cert,
+        ] = await Promise.all([
+            `/acme.sh/${tld}/${tld}.key`,
+            `/acme.sh/${tld}/fullchain.cer`,
+        ].map((filePath) => {
+            return fs.readFile(filePath, 'utf8');
+        }));
 
-    return tls.createSecureContext({
-        key,
-        cert,
-    });
+        return tls.createSecureContext({
+            key,
+            cert,
+        });
+    } catch (error) {
+        console.error('Error getting secure context:', error, 'certs:', await fs.readdir('/acme.sh'));
+        throw error;
+    }
 };
 
 export const createSNICallback = async (config: any) => {
