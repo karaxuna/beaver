@@ -236,6 +236,8 @@ export const startDdnsJob = async ({
 };
 
 export const spawn = (args: ReadonlyArray<string>, options: SpawnOptions) => {
+  console.log('Spawning:', args.join(' '));
+
   const ls = rawSpawn(
     'bash',
     args,
