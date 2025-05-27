@@ -5,9 +5,9 @@ import type { Socket } from 'net';
 import { spawn as rawSpawn, SpawnOptions } from 'child_process';
 import * as path from 'path';
 import { URL } from 'url';
-import * as wildcard from 'wildcard';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
+import { wildcard } from './wildcard';
 
 const REQUEST_TIMEOUT = 10000;
 const MAX_CONNECTIONS = 30;

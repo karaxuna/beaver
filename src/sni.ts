@@ -1,6 +1,6 @@
 import * as tls from 'tls';
 import { promises as fs } from 'fs';
-import * as wildcard from 'wildcard';
+import { wildcard } from './wildcard';
 
 const getSecureContext = async (tld: string) => {
     try {
