@@ -264,7 +264,7 @@ export const spawn = (args: ReadonlyArray<string>, options: SpawnOptions) => {
   });
 };
 
-export const updateCerts = async () => {
+export const updateCerts = async (config: Config) => {
   if (process.env.CA_EAB_KEY_ID && process.env.CA_EAB_HMAC_KEY) {
     await spawn(
       [path.resolve(__dirname, '../acme.sh/acme.sh'), '--register-account', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
@@ -274,10 +274,17 @@ export const updateCerts = async () => {
     );
   }
 
-  await spawn(
-    [path.resolve(__dirname, '../acme.sh/acme.sh'), '--issue', '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--dns', getDNS(), '--log'],
-    {
-      env: process.env,
-    },
-  );
+  const args = [
+    path.resolve(__dirname, '../acme.sh/acme.sh')
+  ];
+
+  for (const domain of config.domains) {
+    args.push('-d', domain.name);
+  }
+
+  args.push('--issue', '--dns', getDNS(), '--log');
+
+  await spawn(args, {
+    env: process.env,
+  });
 };

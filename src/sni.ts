@@ -1,13 +1,13 @@
 import * as tls from 'tls';
 import { promises as fs } from 'fs';
 
-const getSecureContext = async () => {
+const getSecureContext = async (servername: string) => {
     const [
         key,
         cert,
     ] = await Promise.all([
-        `/acme.sh/${process.env.TLD}/${process.env.TLD}.key`,
-        `/acme.sh/${process.env.TLD}/fullchain.cer`,
+        `/acme.sh/${servername}/${servername}.key`,
+        `/acme.sh/${servername}/fullchain.cer`,
     ].map((filePath) => {
         return fs.readFile(filePath, 'utf8');
     }));
@@ -22,19 +22,19 @@ export const createSNICallback = async () => {
     const cache = {};
 
     return (servername: string, cb) => {
-        if (!cache[process.env.TLD]) {
+        if (!cache[servername]) {
             console.log('Getting secure context for:', servername);
-            cache[process.env.TLD] = getSecureContext();
+            cache[servername] = getSecureContext(servername);
             console.log('Cache updated:', cache);
         }
 
-        cache[process.env.TLD]
+        cache[servername]
             .then((context) => {
                 cb(null, context);
             })
             .catch((err) => {
                 console.warn('Error getting secure context:', err);
-                Reflect.deleteProperty(cache, process.env.TLD);
+                Reflect.deleteProperty(cache, servername);
                 console.log('Cache updated:', cache);
                 cb(err);
             });
