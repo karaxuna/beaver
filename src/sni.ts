@@ -50,7 +50,7 @@ export const createSNICallback = async (config: any) => {
             })
             .catch((err) => {
                 console.warn('Error getting secure context:', err);
-                Reflect.deleteProperty(cache, servername);
+                Reflect.deleteProperty(cache, cert);
                 console.log('Cache updated:', cache);
                 cb(err);
             });
