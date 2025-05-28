@@ -276,9 +276,21 @@ export const updateCerts = async (config: Config) => {
     );
   }
 
-  await Promise.all(config.domains.map(async (domain) => {
-    await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), '-d', domain.name, '--issue', '--dns', getDNS(), '--log'], {
+  const domainMap = {} as Record<string, string[]>;
+  for (const domain of config.domains) {
+    const parts = domain.name.split('.');
+    const tld = parts.slice(1).join('.');
+
+    if (domainMap[tld]) {
+      domainMap[tld].push(domain.name);
+    } else {
+      domainMap[tld] = [domain.name];
+    }
+  }
+
+  for (const tlds of Object.values(domainMap)) {
+    await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), ...tlds.map(domain => ['-d', domain]).flat(), '--issue', '--dns', getDNS(), '--log'], {
       env: process.env,
     });
-  }));
+  }
 };

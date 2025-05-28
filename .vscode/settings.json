@@ -3,6 +3,7 @@
     "ddns",
     "dgon",
     "fullchain",
+    "tlds",
     "xfwd"
   ]
 }
