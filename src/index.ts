@@ -61,7 +61,7 @@ export const startProxyServer = async (config: Config) => {
       );
 
       const domain = config.domains.find((domain_) => {
-        return wildcard(domain_.name, url.hostname);
+        return wildcard(url.hostname, domain_.name);
       });
 
       if (!domain) {

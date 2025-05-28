@@ -29,7 +29,7 @@ export const createSNICallback = async (config: any) => {
 
     return (servername: string, cb) => {
         const domain = config.domains.find((domain: any) => {
-            return wildcard(domain.name, servername);
+            return wildcard(servername, domain.name);
         });
 
         if (!domain) {
