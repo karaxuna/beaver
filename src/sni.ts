@@ -1,6 +1,5 @@
 import * as tls from 'tls';
 import { promises as fs } from 'fs';
-import { getCertDomains, getTld, wildcard } from './wildcard';
 
 const getSecureContext = async (tld: string) => {
     try {
@@ -28,21 +27,19 @@ export const createSNICallback = (): tls.TlsOptions['SNICallback'] => {
     const cache: Record<string, Promise<tls.SecureContext>> = {};
 
     return (servername, cb) => {
-        const tld = getTld(servername);
-
-        if (!cache[tld]) {
-            console.log('Getting secure context for:', servername, 'tld:', tld);
-            cache[tld] = getSecureContext(tld);
+        if (!cache[process.env.TLD]) {
+            console.log('Getting secure context for:', servername, 'tld:', process.env.TLD);
+            cache[process.env.TLD] = getSecureContext(process.env.TLD);
             console.log('Cache updated:', cache);
         }
 
-        cache[tld]
+        cache[process.env.TLD]
             .then((context) => {
                 cb(null, context);
             })
             .catch((err) => {
                 console.warn('Error getting secure context:', err);
-                Reflect.deleteProperty(cache, tld);
+                Reflect.deleteProperty(cache, process.env.TLD);
                 console.log('Cache updated:', cache);
                 cb(err, null);
             });

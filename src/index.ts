@@ -7,7 +7,7 @@ import * as path from 'path';
 import { URL } from 'url';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
-import { getTldMapping, wildcard } from './wildcard';
+import { wildcard } from './wildcard';
 
 const REQUEST_TIMEOUT = 10000;
 const MAX_CONNECTIONS = 30;
@@ -266,7 +266,7 @@ export const spawn = (args: ReadonlyArray<string>, options: SpawnOptions) => {
   });
 };
 
-export const updateCerts = async (config: Config) => {
+export const updateCerts = async () => {
   if (process.env.CA_EAB_KEY_ID && process.env.CA_EAB_HMAC_KEY) {
     await spawn(
       [path.resolve(__dirname, '../acme.sh/acme.sh'), '--register-account', '--eab-kid', process.env.CA_EAB_KEY_ID, '--eab-hmac-key', process.env.CA_EAB_HMAC_KEY],
@@ -276,10 +276,7 @@ export const updateCerts = async (config: Config) => {
     );
   }
 
-  for (const [tld, domains] of Object.entries(getTldMapping(config.domains))) {
-    console.log('Updating certs for TLD:', tld, 'domains:', domains);
-    await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), ...domains.map((domain) => ['-d', domain]).flat(), '--issue', '--dns', getDNS(), '--log'], {
-      env: process.env,
-    });
-  }
+  await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), '-d', process.env.TLD, '-d', `*.${process.env.TLD}`, '--issue', '--dns', getDNS(), '--log'], {
+    env: process.env,
+  });
 };
