@@ -1,6 +1,6 @@
 import * as tls from 'tls';
 import { promises as fs } from 'fs';
-import { getCertDomains, wildcard } from './wildcard';
+import { getCertDomains, getTld, wildcard } from './wildcard';
 
 const getSecureContext = async (tld: string) => {
     try {
@@ -24,31 +24,25 @@ const getSecureContext = async (tld: string) => {
     }
 };
 
-export const createSNICallback = (config: any): tls.TlsOptions['SNICallback'] => {
+export const createSNICallback = (): tls.TlsOptions['SNICallback'] => {
     const cache: Record<string, Promise<tls.SecureContext>> = {};
 
     return (servername, cb) => {
-        const name = getCertDomains(config.domains).find((_name) => {
-            return wildcard(servername, _name);
-        });
+        const tld = getTld(servername);
 
-        if (!name) {
-            return cb(new Error('No domain found for servername: ' + servername), null);
-        }
-
-        if (!cache[name]) {
-            console.log('Getting secure context for:', servername, 'domain name:', name);
-            cache[name] = getSecureContext(name);
+        if (!cache[tld]) {
+            console.log('Getting secure context for:', servername, 'tld:', tld);
+            cache[tld] = getSecureContext(tld);
             console.log('Cache updated:', cache);
         }
 
-        cache[name]
+        cache[tld]
             .then((context) => {
                 cb(null, context);
             })
             .catch((err) => {
                 console.warn('Error getting secure context:', err);
-                Reflect.deleteProperty(cache, name);
+                Reflect.deleteProperty(cache, tld);
                 console.log('Cache updated:', cache);
                 cb(err, null);
             });

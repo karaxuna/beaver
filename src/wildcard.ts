@@ -51,3 +51,23 @@ export function getCertDomains(domains: any[]): string[] {
     return a.replace(/^\*\./, '').localeCompare(b.replace(/^\*\./, ''));
   });
 }
+
+export const getTld = (domain: string) => {
+  return domain.split('.').slice(-2).join('.');
+};
+
+export const getTldMapping = (domains: any[]): Record<string, string[]> => {
+  const mapping: Record<string, string[]> = {};
+
+  for (const { name } of domains) {
+    const tld = getTld(name);
+
+    if (!mapping[tld]) {
+      mapping[tld] = [];
+    }
+
+    mapping[tld].push(name);
+  }
+
+  return mapping;
+};

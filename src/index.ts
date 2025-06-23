@@ -7,7 +7,7 @@ import * as path from 'path';
 import { URL } from 'url';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
-import { getCertDomains, wildcard } from './wildcard';
+import { getTldMapping, wildcard } from './wildcard';
 
 const REQUEST_TIMEOUT = 10000;
 const MAX_CONNECTIONS = 30;
@@ -50,7 +50,7 @@ export const startProxyServer = async (config: Config) => {
   });
 
   const httpsOptions = {
-    SNICallback: await createSNICallback(config),
+    SNICallback: createSNICallback(),
   };
 
   await new Promise<void>((resolve, reject) => {
@@ -276,9 +276,10 @@ export const updateCerts = async (config: Config) => {
     );
   }
 
-  const tlds = getCertDomains(config.domains);
-
-  await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), ...tlds.map(domain => ['-d', domain]).flat(), '--issue', '--dns', getDNS(), '--log'], {
-    env: process.env,
-  });
+  for (const [tld, domains] of Object.entries(getTldMapping(config.domains))) {
+    console.log('Updating certs for TLD:', tld, 'domains:', domains);
+    await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), ...domains.map((domain) => ['-d', domain]).flat(), '--issue', '--dns', getDNS(), '--log'], {
+      env: process.env,
+    });
+  }
 };
