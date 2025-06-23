@@ -1,6 +1,6 @@
 import * as tls from 'tls';
 import { promises as fs } from 'fs';
-import { wildcard } from './wildcard';
+import { getCertDomains, wildcard } from './wildcard';
 
 const getSecureContext = async (tld: string) => {
     try {
@@ -24,33 +24,33 @@ const getSecureContext = async (tld: string) => {
     }
 };
 
-export const createSNICallback = async (config: any) => {
-    const cache = {};
+export const createSNICallback = (config: any): tls.TlsOptions['SNICallback'] => {
+    const cache: Record<string, Promise<tls.SecureContext>> = {};
 
-    return (servername: string, cb) => {
-        const domain = config.domains.find((domain: any) => {
-            return wildcard(servername, domain.name);
+    return (servername, cb) => {
+        const name = getCertDomains(config.domains).find((_name) => {
+            return wildcard(servername, _name);
         });
 
-        if (!domain) {
-            return cb(new Error('No domain found for servername: ' + servername));
+        if (!name) {
+            return cb(new Error('No domain found for servername: ' + servername), null);
         }
 
-        if (!cache[domain.name]) {
-            console.log('Getting secure context for:', servername, 'domain name:', domain.name);
-            cache[domain.name] = getSecureContext(domain.name);
+        if (!cache[name]) {
+            console.log('Getting secure context for:', servername, 'domain name:', name);
+            cache[name] = getSecureContext(name);
             console.log('Cache updated:', cache);
         }
 
-        cache[domain.name]
+        cache[name]
             .then((context) => {
                 cb(null, context);
             })
             .catch((err) => {
                 console.warn('Error getting secure context:', err);
-                Reflect.deleteProperty(cache, domain.name);
+                Reflect.deleteProperty(cache, name);
                 console.log('Cache updated:', cache);
-                cb(err);
+                cb(err, null);
             });
     };
 };

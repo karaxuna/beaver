@@ -7,7 +7,7 @@ import * as path from 'path';
 import { URL } from 'url';
 import { createSNICallback } from './sni';
 import { updateDigitalOceanDNSRecord } from './ddns';
-import { wildcard } from './wildcard';
+import { getCertDomains, wildcard } from './wildcard';
 
 const REQUEST_TIMEOUT = 10000;
 const MAX_CONNECTIONS = 30;
@@ -276,21 +276,9 @@ export const updateCerts = async (config: Config) => {
     );
   }
 
-  const domainMap = {} as Record<string, string[]>;
-  for (const domain of config.domains) {
-    const parts = domain.name.split('.');
-    const tld = parts.slice(1).join('.');
+  const tlds = getCertDomains(config.domains);
 
-    if (domainMap[tld]) {
-      domainMap[tld].push(domain.name);
-    } else {
-      domainMap[tld] = [domain.name];
-    }
-  }
-
-  for (const tlds of Object.values(domainMap)) {
-    await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), ...tlds.map(domain => ['-d', domain]).flat(), '--issue', '--dns', getDNS(), '--log'], {
-      env: process.env,
-    });
-  }
+  await spawn([path.resolve(__dirname, '../acme.sh/acme.sh'), ...tlds.map(domain => ['-d', domain]).flat(), '--issue', '--dns', getDNS(), '--log'], {
+    env: process.env,
+  });
 };
